@@ -13,7 +13,7 @@ const Navbar = () => {
 
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6  flex items-center justify-between">
         {/* Left Section: Logo */}
         <Link href="/" className="flex items-center gap-2">
           <Image
@@ -21,7 +21,7 @@ const Navbar = () => {
             alt="AI Resume Logo"
             width={150}
             height={150}
-            className="rounded-full"
+            className=""
           />
         </Link>
 
