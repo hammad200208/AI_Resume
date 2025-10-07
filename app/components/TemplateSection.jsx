@@ -37,26 +37,24 @@ const TemplateSection = () => {
           {templates.map((template) => (
             <div
               key={template.id}
-              className="bg-white rounded-3xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-2"
+              className="bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 transform hover:-translate-y-1"
             >
-              {/* Image Container */}
-              <div className="relative w-full aspect-[4/5] overflow-hidden">
+              {/* Image Container with Aspect Ratio */}
+              <div className="relative w-full aspect-[4/5] bg-gray-100 flex items-center justify-center">
                 <Image
                   src={template.img}
                   alt={template.title}
                   fill
-                  className="object-cover hover:scale-105 transition-transform duration-500"
+                  className="object-contain p-4 transition-transform duration-500 hover:scale-105"
                 />
               </div>
 
-              {/* Text Content */}
+              {/* Text Section */}
               <div className="p-8">
-                <h3 className="text-2xl font-semibold text-gray-800 mb-3">
+                <h3 className="text-2xl font-semibold text-gray-800 mb-4">
                   {template.title}
                 </h3>
-                <p className="text-gray-600 text-base leading-relaxed">
-                  {template.desc}
-                </p>
+                <p className="text-gray-600 text-base">{template.desc}</p>
               </div>
             </div>
           ))}
