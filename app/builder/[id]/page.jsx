@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 
 const templates = {
   1: "/temp1.webp",
@@ -41,12 +42,14 @@ export default function BuilderPage() {
         </div>
 
         <div className="mt-10">
+          <Link href={`/builder/${id}/edit`}>
           <button
             onClick={handleEditClick}
             className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-600 transition-all"
           >
             Start Editing
           </button>
+          </Link>
         </div>
       </div>
     </div>

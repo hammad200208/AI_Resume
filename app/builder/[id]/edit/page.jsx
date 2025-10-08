@@ -1,122 +1,281 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useState, useRef } from "react";
 import Image from "next/image";
-import { useState } from "react";
+import Cropper from "react-easy-crop";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { templates } from "../../templateConfig";
 
-const templates = {
-  1: "/temp1.webp",
-  2: "/temp2.webp",
-  3: "/temp3.png",
-};
-
-export default function ResumeEditor() {
+export default function EditBuilderPage() {
   const { id } = useParams();
-  const selectedTemplate = templates[id];
+  const template = templates[id];
+  const [formData, setFormData] = useState({});
+  const [cropping, setCropping] = useState(false);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [imageToCrop, setImageToCrop] = useState(null);
+  const cropCanvasRef = useRef(null);
 
-  const [formData, setFormData] = useState({
-    name: "John Doe",
-    title: "Full Stack Developer",
-    email: "john@example.com",
-    phone: "+1 (234) 567-890",
-    summary:
-      "Passionate developer with 5+ years of experience in building responsive and high-performance web applications.",
-  });
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (key, value) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-10 px-6">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
-        {/* LEFT SIDE — Form */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            Resume Information
-          </h2>
+  const handleMultipleChange = (key, index, value) => {
+    const arr = [...(formData[key] || [])];
+    arr[index] = value;
+    handleChange(key, arr);
+  };
 
-          <div className="space-y-5">
-            <input
-              type="text"
-              name="name"
-              placeholder="Full Name"
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-            <input
-              type="text"
-              name="title"
-              placeholder="Job Title"
-              value={formData.title}
-              onChange={handleChange}
-              className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-            <input
-              type="email"
-              name="email"
-              placeholder="Email Address"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-            <input
-              type="tel"
-              name="phone"
-              placeholder="Phone Number"
-              value={formData.phone}
-              onChange={handleChange}
-              className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-            <textarea
-              name="summary"
-              placeholder="Professional Summary"
-              value={formData.summary}
-              onChange={handleChange}
-              className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none h-28 resize-none"
-            />
+  const addMore = (key) => {
+    handleChange(key, [...(formData[key] || [""]), ""]);
+  };
+
+  const removeItem = (key, index) => {
+    const arr = [...(formData[key] || [])];
+    arr.splice(index, 1);
+    handleChange(key, arr);
+  };
+
+  const handleImageSelect = (fieldKey, file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImageToCrop(e.target.result);
+      setCropping(true);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      handleChange("_cropField", fieldKey);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const saveCrop = () => {
+    handleChange(formData._cropField, imageToCrop);
+    setCropping(false);
+  };
+
+  const downloadResume = async () => {
+    const resumeElement = document.getElementById("resume-preview");
+    const canvas = await html2canvas(resumeElement, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+    });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "px",
+      format: [canvas.width, canvas.height],
+    });
+    pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+    pdf.save("resume.pdf");
+  };
+
+  const renderField = (field) => {
+    const value = formData[field.key] || (field.multiple ? [""] : "");
+
+    if (field.multiple) {
+      return (
+        <div key={field.key} className="mb-4 text-left">
+          <label className="block font-medium mb-1 text-gray-700">{field.label}</label>
+          {value.map((item, index) => (
+            <div key={index} className="flex gap-2 mb-2 items-center">
+              {field.type === "textarea" ? (
+                <textarea
+                  rows={2}
+                  value={item}
+                  onChange={(e) => handleMultipleChange(field.key, index, e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+                />
+              ) : (
+                <input
+                  type={field.type}
+                  value={item}
+                  onChange={(e) => handleMultipleChange(field.key, index, e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => removeItem(field.key, index)}
+                className="text-red-600 hover:underline"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => addMore(field.key)}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            + Add More
+          </button>
+        </div>
+      );
+    }
+
+    if (field.type === "file") {
+      return (
+        <div key={field.key} className="mb-4 text-left">
+          <label className="block font-medium mb-1 text-gray-700">{field.label}</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleImageSelect(field.key, e.target.files[0])}
+            className="w-full border border-gray-300 rounded-lg p-2"
+          />
+        </div>
+      );
+    }
+
+    if (field.type === "textarea") {
+      return (
+        <div key={field.key} className="mb-4 text-left">
+          <label className="block font-medium mb-1 text-gray-700">{field.label}</label>
+          <textarea
+            rows={3}
+            value={value}
+            onChange={(e) => handleChange(field.key, e.target.value)}
+            className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div key={field.key} className="mb-4 text-left">
+        <label className="block font-medium mb-1 text-gray-700">{field.label}</label>
+        <input
+          type={field.type}
+          value={value}
+          onChange={(e) => handleChange(field.key, e.target.value)}
+          className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+    );
+  };
+
+  const renderTemplate1Preview = () => (
+    <div
+      id="resume-preview"
+      className="bg-white shadow-xl rounded-xl overflow-hidden flex flex-col md:flex-row p-6 space-y-4"
+    >
+      <div className="w-full md:w-1/3 bg-gray-100 p-4 space-y-4">
+        {formData.photo && (
+          <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-2 border-gray-300">
+            <Image src={formData.photo} alt="Profile" width={128} height={128} className="object-cover w-full h-full" />
           </div>
+        )}
+        {formData.name && <h2 className="text-2xl font-bold text-center">{formData.name}</h2>}
+        {formData.profession && <p className="text-center text-blue-600 font-medium">{formData.profession}</p>}
+        {formData.about && (
+          <div>
+            <h3 className="font-semibold text-gray-700 mb-1">About Me</h3>
+            <p className="text-sm text-gray-600">{formData.about}</p>
+          </div>
+        )}
+        {Array.isArray(formData.education) && formData.education.length > 0 && (
+          <div>
+            <h3 className="font-semibold text-gray-700 mb-1">Education</h3>
+            <ul className="list-disc list-inside text-sm text-gray-600">
+              {formData.education.map((edu, idx) => (
+                <li key={idx}>{edu}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {Array.isArray(formData.contact) && formData.contact.length > 0 && (
+          <div>
+            <h3 className="font-semibold text-gray-700 mb-1">Contact</h3>
+            <ul className="list-disc list-inside text-sm text-gray-600">
+              {formData.contact.map((c, idx) => (
+                <li key={idx}>{c}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+      <div className="w-full md:w-2/3 p-4 space-y-4">
+        <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">Work Experience</h3>
+        {Array.isArray(formData.experience) && formData.experience.length > 0 ? (
+          <ul className="list-disc list-inside text-sm text-gray-700">
+            {formData.experience.map((exp, idx) => (
+              <li key={idx}>{exp}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-400 italic text-sm">Add your work experience...</p>
+        )}
+      </div>
+    </div>
+  );
 
-          <button className="mt-6 w-full py-3 rounded-lg text-white font-semibold bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 transition-all">
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-6">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
+        {/* Form */}
+        <div className="bg-white p-8 rounded-2xl shadow-lg">
+          <h2 className="text-2xl font-bold mb-6 text-gray-800">Customize Your {template.name}</h2>
+          {template.left && template.right ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-xl font-semibold mb-3 text-gray-700">Left Section</h3>
+                {template.left.map(renderField)}
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-3 text-gray-700">Right Section</h3>
+                {template.right.map(renderField)}
+              </div>
+            </div>
+          ) : (
+            template.fields?.map(renderField)
+          )}
+          <button
+            onClick={downloadResume}
+            className="mt-6 w-full py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-all"
+          >
             Download Resume
           </button>
         </div>
 
-        {/* RIGHT SIDE — Live Preview */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-          <h3 className="text-xl font-semibold mb-4 text-center">Live Preview</h3>
-
-          <div className="relative w-full aspect-[3/4] bg-gray-50 rounded-lg overflow-hidden flex flex-col items-center text-left p-6">
-            {/* Template background */}
-            <div className="absolute inset-0 opacity-10">
-              <Image
-                src={selectedTemplate}
-                alt={`Template ${id}`}
-                fill
-                className="object-contain"
-              />
-            </div>
-
-            {/* Resume text overlay */}
-            <div className="relative z-10 w-full h-full flex flex-col gap-3 text-gray-800">
-              <h1 className="text-3xl font-bold">{formData.name}</h1>
-              <h2 className="text-lg font-medium text-gray-600">
-                {formData.title}
-              </h2>
-              <p className="text-sm text-gray-500">
-                {formData.email} • {formData.phone}
-              </p>
-              <div className="mt-4 border-t pt-4">
-                <h3 className="text-lg font-semibold mb-2">Professional Summary</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {formData.summary}
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* Preview */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 relative">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4 text-center">
+            Live Preview ({template.previewStyle})
+          </h2>
+          {renderTemplate1Preview()}
         </div>
       </div>
+
+      {/* Cropping Modal */}
+      {cropping && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-4 rounded-lg w-96 h-96 relative">
+            <Cropper
+              image={imageToCrop}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+            />
+            <button
+              onClick={saveCrop}
+              className="absolute bottom-4 left-4 bg-green-500 text-white px-4 py-2 rounded-lg"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => setCropping(false)}
+              className="absolute bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
