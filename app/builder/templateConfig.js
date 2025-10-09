@@ -153,12 +153,96 @@ export const templates = {
   },
 
   3: {
-    name: "Minimal Template",
-    previewStyle: "minimal",
-    fields: [
-      { key: "name", label: "Full Name", type: "text" },
-      { key: "summary", label: "Professional Summary", type: "textarea" },
-      { key: "skills", label: "Key Skills", type: "textarea" },
-    ],
-  },
+  name: "Minimal Template",
+  previewStyle: "minimal",
+  fields: [
+    // Left Side
+    { key: "image", label: "Profile Image", type: "image" },
+    { key: "aboutMe", label: "About Me", type: "textarea" },
+    { key: "objective", label: "Career Objective", type: "textarea" },
+
+    {
+      key: "education",
+      label: "Education",
+      type: "repeater",
+      fields: [
+        { key: "degree", label: "Degree / Program", type: "text" },
+        { key: "institution", label: "Institution", type: "text" },
+        { key: "year", label: "Year of Completion", type: "text" },
+      ],
+    },
+
+    {
+      key: "languages",
+      label: "Languages",
+      type: "repeater",
+      fields: [
+        { key: "language", label: "Language", type: "text" },
+        { key: "proficiency", label: "Proficiency (e.g. Fluent, Intermediate)", type: "text" },
+      ],
+    },
+
+    {
+      key: "references",
+      label: "References",
+      type: "repeater",
+      fields: [
+        { key: "name", label: "Name", type: "text" },
+        { key: "designation", label: "Designation", type: "text" },
+        { key: "contact", label: "Contact Info", type: "text" },
+      ],
+    },
+
+    // Right Side
+    { key: "fullName", label: "Full Name", type: "text" },
+    { key: "profession", label: "Profession / Title", type: "text" },
+
+    {
+      key: "experience",
+      label: "Work Experience",
+      type: "repeater",
+      fields: [
+        { key: "title", label: "Job Title", type: "text" },
+        { key: "company", label: "Company", type: "text" },
+        { key: "duration", label: "Duration", type: "text" },
+        { key: "description", label: "Description", type: "textarea" },
+      ],
+    },
+
+    {
+      key: "skills",
+      label: "Skills",
+      type: "repeater",
+      fields: [{ key: "skill", label: "Skill", type: "text" }],
+    },
+
+    {
+      key: "projects",
+      label: "Projects",
+      type: "repeater",
+      fields: [
+        { key: "title", label: "Project Title", type: "text" },
+        { key: "description", label: "Description", type: "textarea" },
+      ],
+    },
+
+    {
+      key: "certifications",
+      label: "Certifications",
+      type: "repeater",
+      fields: [
+        { key: "name", label: "Certification Name", type: "text" },
+        { key: "issuer", label: "Issued By", type: "text" },
+        { key: "year", label: "Year", type: "text" },
+      ],
+    },
+
+    {
+      key: "interests",
+      label: "Interests",
+      type: "repeater",
+      fields: [{ key: "interest", label: "Interest", type: "text" }],
+    },
+  ],
+},
 };
