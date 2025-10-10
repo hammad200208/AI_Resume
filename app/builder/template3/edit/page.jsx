@@ -88,7 +88,7 @@ export default function MinimalTemplate() {
   return (
     <div className="flex flex-col md:flex-row gap-6 p-6">
       {/* Left: Form */}
-      <div className="w-full md:w-1/2 space-y-4 overflow-y-auto h-[90vh] border p-4 rounded-lg shadow">
+      <div className="w-full md:w-1/2 space-y-4 overflow-y-auto h-[90vh] border p-4 rounded-lg shadow bg-white">
         <h1 className="text-2xl font-semibold mb-3 text-center">Minimal Template Editor</h1>
 
         {/* Image */}
@@ -173,13 +173,13 @@ export default function MinimalTemplate() {
       {/* Right: Preview */}
       <div
         id="resume-preview"
-        className="w-full md:w-1/2 p-6 border rounded-lg shadow-lg bg-white"
+        className="w-full md:w-1/2 border rounded-lg shadow-lg bg-white overflow-hidden"
       >
-        <div className="flex">
+        <div className="flex min-h-full">
           {/* Left column */}
-          <div className="w-1/3 pr-4 border-r">
+          <div className="w-1/3 min-h-full bg-[#e5c2b2] text-black p-5 flex flex-col justify-start">
             {formData.image && (
-              <div className="w-28 h-28 mx-auto mb-4 rounded-full overflow-hidden border">
+              <div className="w-28 h-28 mx-auto mb-4 rounded-full overflow-hidden border-2 border-black">
                 <Image
                   src={formData.image}
                   alt="profile"
@@ -189,38 +189,39 @@ export default function MinimalTemplate() {
                 />
               </div>
             )}
-            <h2 className="text-lg font-semibold mb-2">About Me</h2>
-            <p className="text-sm mb-3">{formData.aboutMe}</p>
 
-            <h2 className="text-lg font-semibold mb-2">Career Objective</h2>
-            <p className="text-sm mb-3">{formData.objective}</p>
+            <h2 className="text-lg font-semibold mb-2 text-black">About Me</h2>
+            <p className="text-sm mb-3 text-black">{formData.aboutMe}</p>
 
-            <h2 className="text-lg font-semibold mb-2">Education</h2>
+            <h2 className="text-lg font-semibold mb-2 text-black">Career Objective</h2>
+            <p className="text-sm mb-3 text-black">{formData.objective}</p>
+
+            <h2 className="text-lg font-semibold mb-2 text-black">Education</h2>
             {formData.education.map((edu, i) => (
-              <p key={i} className="text-sm mb-1">
+              <p key={i} className="text-sm mb-1 text-black">
                 <strong>{edu.degree}</strong> — {edu.institution} ({edu.year})
               </p>
             ))}
 
-            <h2 className="text-lg font-semibold mt-3 mb-2">Languages</h2>
+            <h2 className="text-lg font-semibold mt-3 mb-2 text-black">Languages</h2>
             {formData.languages.map((lang, i) => (
-              <p key={i} className="text-sm">
+              <p key={i} className="text-sm text-black">
                 {lang.language} ({lang.proficiency})
               </p>
             ))}
 
-            <h2 className="text-lg font-semibold mt-3 mb-2">References</h2>
+            <h2 className="text-lg font-semibold mt-3 mb-2 text-black">References</h2>
             {formData.references.map((ref, i) => (
-              <p key={i} className="text-sm mb-1">
+              <p key={i} className="text-sm mb-1 text-black">
                 {ref.name} — {ref.designation} ({ref.contact})
               </p>
             ))}
           </div>
 
           {/* Right column */}
-          <div className="w-2/3 pl-4">
+          <div className="w-2/3 pl-6 bg-white text-black">
             <h1 className="text-2xl font-bold">{formData.fullName}</h1>
-            <h3 className="text-lg text-gray-700 mb-4">{formData.profession}</h3>
+            <h3 className="text-lg mb-4">{formData.profession}</h3>
 
             <h2 className="font-semibold text-lg mb-2">Experience</h2>
             {formData.experience.map((exp, i) => (
