@@ -1,513 +1,395 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import jsPDF from "jspdf";
+import React, { useRef, useState } from "react";
 import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const Template2EditPage = () => {
   const [formData, setFormData] = useState({
-    photo: null,
-    name: "",
-    profession: "",
-    contact: [{ type: "", value: "" }],
-    about: "",
-    introduction: "",
-    experience: [{ title: "", company: "", years: "", details: "" }],
-    education: [{ degree: "", institution: "", year: "" }],
-    skills: [{ skill: "", level: "" }],
-    languages: [{ language: "", level: "" }],
-    references: [{ name: "", contact: "" }],
+    image: "",
+    fullName: "",
+    jobTitle: "",
+    aboutMe: "",
+    skills: "",
+    languages: "",
+    email: "",
+    phone: "",
+    address: "",
   });
+
+  const [experienceList, setExperienceList] = useState([""]);
+  const [educationList, setEducationList] = useState([""]);
 
   const previewRef = useRef(null);
 
-  // ---------- HANDLERS ----------
-  const handleChange = (key, value) =>
-    setFormData((prev) => ({ ...prev, [key]: value }));
-
-  const handleFileChange = (key, file) =>
-    setFormData((prev) => ({ ...prev, [key]: file }));
-
-  const handleSectionChange = (section, index, field, value) => {
-    const updated = [...formData[section]];
-    updated[index][field] = value;
-    setFormData((prev) => ({ ...prev, [section]: updated }));
+  // Handle general input
+  const handleChange = (e) => {
+    const { name, value, type, files } = e.target;
+    if (type === "file") {
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, image: reader.result });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
-  const addSectionItem = (section, template) => {
-    setFormData((prev) => ({
-      ...prev,
-      [section]: [...prev[section], { ...template }],
-    }));
+  // Experience handlers
+  const handleExperienceChange = (index, value) => {
+    const list = [...experienceList];
+    list[index] = value;
+    setExperienceList(list);
   };
 
-  // ---------- PDF DOWNLOAD ----------
-  const downloadResume = async () => {
+  const addExperience = () => setExperienceList([...experienceList, ""]);
+  const removeExperience = (index) => {
+    const list = [...experienceList];
+    list.splice(index, 1);
+    setExperienceList(list);
+  };
+
+  // Education handlers
+  const handleEducationChange = (index, value) => {
+    const list = [...educationList];
+    list[index] = value;
+    setEducationList(list);
+  };
+
+  const addEducation = () => setEducationList([...educationList, ""]);
+  const removeEducation = (index) => {
+    const list = [...educationList];
+    list.splice(index, 1);
+    setEducationList(list);
+  };
+
+  // Download as PDF
+  const handleDownloadPDF = async () => {
     const element = previewRef.current;
-    const canvas = await html2canvas(element);
+    const canvas = await html2canvas(element, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
-
-    const imgWidth = 210;
-    const pageHeight = 295;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-    }
-
-    pdf.save(`${formData.name || "resume"}.pdf`);
+    const width = pdf.internal.pageSize.getWidth();
+    const height = (canvas.height * width) / canvas.width;
+    pdf.addImage(imgData, "PNG", 0, 0, width, height);
+    pdf.save("resume.pdf");
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto grid grid-cols-2 gap-6">
-        {/* ---------- FORM BUILDER ---------- */}
-        <div className="bg-white shadow rounded-lg p-6 overflow-y-auto max-h-[90vh]">
-          <h2 className="text-xl font-semibold mb-4 text-blue-600">
-            Fill Resume Details
-          </h2>
+    <div className="flex flex-col md:flex-row gap-8 p-8 bg-gray-50 min-h-screen">
+      {/* LEFT PANEL (Form) */}
+      <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow overflow-y-auto">
+        <h2 className="text-2xl font-bold mb-6 text-[#21141a]">Edit Resume</h2>
 
-          {/* Photo */}
-          <div className="mb-4">
-            <label className="font-semibold block mb-1">Profile Photo</label>
-            <input
-              type="file"
-              onChange={(e) => handleFileChange("photo", e.target.files[0])}
-              className="w-full border rounded-md p-2"
-            />
-          </div>
+        {/* Upload Image */}
+        <div className="mb-4">
+          <label className="block mb-2 font-medium text-gray-700">
+            Profile Image
+          </label>
+          <input
+            type="file"
+            name="image"
+            accept="image/*"
+            onChange={handleChange}
+            className="w-full border p-2 rounded"
+          />
+        </div>
 
-          {/* Name */}
-          <div className="mb-4">
-            <label className="font-semibold block mb-1">Full Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => handleChange("name", e.target.value)}
-              className="w-full border rounded-md p-2"
-            />
-          </div>
-
-          {/* Profession */}
-          <div className="mb-4">
-            <label className="font-semibold block mb-1">Profession</label>
+        {/* Basic Info */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Full Name
+            </label>
             <input
               type="text"
-              value={formData.profession}
-              onChange={(e) => handleChange("profession", e.target.value)}
-              className="w-full border rounded-md p-2"
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
             />
           </div>
-
-          {/* Contact Info */}
-          <div className="mb-4">
-            <label className="font-semibold text-lg block mb-2">
-              Contact Info
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Job Title
             </label>
-            {formData.contact.map((item, i) => (
-              <div key={i} className="border rounded-md p-3 mb-3">
-                <input
-                  type="text"
-                  placeholder="Type (Email, Phone)"
-                  value={item.type}
-                  onChange={(e) =>
-                    handleSectionChange("contact", i, "type", e.target.value)
-                  }
-                  className="w-full border rounded-md p-2 mb-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Value"
-                  value={item.value}
-                  onChange={(e) =>
-                    handleSectionChange("contact", i, "value", e.target.value)
-                  }
-                  className="w-full border rounded-md p-2"
-                />
-              </div>
-            ))}
-            <button
-              onClick={() => addSectionItem("contact", { type: "", value: "" })}
-              className="text-sm text-blue-600 hover:underline"
-            >
-              + Add Contact
-            </button>
-          </div>
-
-          {/* About */}
-          <div className="mb-4">
-            <label className="font-semibold block mb-1">About Me</label>
-            <textarea
-              value={formData.about}
-              onChange={(e) => handleChange("about", e.target.value)}
-              className="w-full border rounded-md p-2 h-24"
+            <input
+              type="text"
+              name="jobTitle"
+              value={formData.jobTitle}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
             />
           </div>
+        </div>
 
-          {/* Introduction */}
-          <div className="mb-4">
-            <label className="font-semibold block mb-1">
-              Resume Introduction
+        {/* About Me */}
+        <div className="mt-4">
+          <label className="block mb-1 text-sm font-medium text-gray-700">
+            About Me
+          </label>
+          <textarea
+            name="aboutMe"
+            value={formData.aboutMe}
+            onChange={handleChange}
+            rows="3"
+            className="w-full border p-2 rounded"
+          />
+        </div>
+
+        {/* Skills & Languages */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Skills (comma separated)
             </label>
-            <textarea
-              value={formData.introduction}
-              onChange={(e) => handleChange("introduction", e.target.value)}
-              className="w-full border rounded-md p-2 h-24"
+            <input
+              type="text"
+              name="skills"
+              value={formData.skills}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
             />
           </div>
-
-          {/* Work Experience */}
-          <div className="mb-6">
-            <label className="font-semibold text-lg block mb-2">
-              Work Experience
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Languages (comma separated)
             </label>
-            {formData.experience.map((exp, i) => (
-              <div key={i} className="border rounded-md p-3 mb-3">
-                <input
-                  type="text"
-                  placeholder="Job Title"
-                  value={exp.title}
-                  onChange={(e) =>
-                    handleSectionChange("experience", i, "title", e.target.value)
-                  }
-                  className="w-full border rounded-md p-2 mb-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Company"
-                  value={exp.company}
-                  onChange={(e) =>
-                    handleSectionChange(
-                      "experience",
-                      i,
-                      "company",
-                      e.target.value
-                    )
-                  }
-                  className="w-full border rounded-md p-2 mb-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Years"
-                  value={exp.years}
-                  onChange={(e) =>
-                    handleSectionChange("experience", i, "years", e.target.value)
-                  }
-                  className="w-full border rounded-md p-2 mb-2"
-                />
-                <textarea
-                  placeholder="Details"
-                  value={exp.details}
-                  onChange={(e) =>
-                    handleSectionChange(
-                      "experience",
-                      i,
-                      "details",
-                      e.target.value
-                    )
-                  }
-                  className="w-full border rounded-md p-2"
-                />
-              </div>
-            ))}
-            <button
-              onClick={() =>
-                addSectionItem("experience", {
-                  title: "",
-                  company: "",
-                  years: "",
-                  details: "",
-                })
-              }
-              className="text-sm text-blue-600 hover:underline"
-            >
-              + Add Experience
-            </button>
+            <input
+              type="text"
+              name="languages"
+              value={formData.languages}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+            />
           </div>
+        </div>
 
-          {/* Education */}
-          <div className="mb-6">
-            <label className="font-semibold text-lg block mb-2">
-              Education
+        {/* Contact Info */}
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Email
             </label>
-            {formData.education.map((edu, i) => (
-              <div key={i} className="border rounded-md p-3 mb-3">
-                <input
-                  type="text"
-                  placeholder="Degree"
-                  value={edu.degree}
-                  onChange={(e) =>
-                    handleSectionChange("education", i, "degree", e.target.value)
-                  }
-                  className="w-full border rounded-md p-2 mb-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Institution"
-                  value={edu.institution}
-                  onChange={(e) =>
-                    handleSectionChange(
-                      "education",
-                      i,
-                      "institution",
-                      e.target.value
-                    )
-                  }
-                  className="w-full border rounded-md p-2 mb-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Year"
-                  value={edu.year}
-                  onChange={(e) =>
-                    handleSectionChange("education", i, "year", e.target.value)
-                  }
-                  className="w-full border rounded-md p-2"
-                />
-              </div>
-            ))}
-            <button
-              onClick={() =>
-                addSectionItem("education", {
-                  degree: "",
-                  institution: "",
-                  year: "",
-                })
-              }
-              className="text-sm text-blue-600 hover:underline"
-            >
-              + Add Education
-            </button>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+            />
           </div>
-
-          {/* Skills */}
-          <div className="mb-6">
-            <label className="font-semibold text-lg block mb-2">
-              Professional Skills
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Phone
             </label>
-            {formData.skills.map((s, i) => (
-              <div key={i} className="border rounded-md p-3 mb-3">
-                <input
-                  type="text"
-                  placeholder="Skill"
-                  value={s.skill}
-                  onChange={(e) =>
-                    handleSectionChange("skills", i, "skill", e.target.value)
-                  }
-                  className="w-full border rounded-md p-2 mb-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Level (e.g. Expert, Beginner)"
-                  value={s.level}
-                  onChange={(e) =>
-                    handleSectionChange("skills", i, "level", e.target.value)
-                  }
-                  className="w-full border rounded-md p-2"
-                />
-              </div>
-            ))}
-            <button
-              onClick={() =>
-                addSectionItem("skills", { skill: "", level: "" })
-              }
-              className="text-sm text-blue-600 hover:underline"
-            >
-              + Add Skill
-            </button>
+            <input
+              type="text"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+            />
           </div>
-
-          {/* Languages */}
-          <div className="mb-6">
-            <label className="font-semibold text-lg block mb-2">
-              Languages
+          <div>
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Address
             </label>
-            {formData.languages.map((lang, i) => (
-              <div key={i} className="border rounded-md p-3 mb-3">
-                <input
-                  type="text"
-                  placeholder="Language"
-                  value={lang.language}
-                  onChange={(e) =>
-                    handleSectionChange(
-                      "languages",
-                      i,
-                      "language",
-                      e.target.value
-                    )
-                  }
-                  className="w-full border rounded-md p-2 mb-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Proficiency (Fluent, Basic)"
-                  value={lang.level}
-                  onChange={(e) =>
-                    handleSectionChange("languages", i, "level", e.target.value)
-                  }
-                  className="w-full border rounded-md p-2"
-                />
-              </div>
-            ))}
-            <button
-              onClick={() =>
-                addSectionItem("languages", { language: "", level: "" })
-              }
-              className="text-sm text-blue-600 hover:underline"
-            >
-              + Add Language
-            </button>
+            <input
+              type="text"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+            />
           </div>
+        </div>
 
-          {/* References */}
-          <div className="mb-6">
-            <label className="font-semibold text-lg block mb-2">
-              References
-            </label>
-            {formData.references.map((ref, i) => (
-              <div key={i} className="border rounded-md p-3 mb-3">
-                <input
-                  type="text"
-                  placeholder="Name"
-                  value={ref.name}
-                  onChange={(e) =>
-                    handleSectionChange("references", i, "name", e.target.value)
-                  }
-                  className="w-full border rounded-md p-2 mb-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Contact Info"
-                  value={ref.contact}
-                  onChange={(e) =>
-                    handleSectionChange(
-                      "references",
-                      i,
-                      "contact",
-                      e.target.value
-                    )
-                  }
-                  className="w-full border rounded-md p-2"
-                />
-              </div>
-            ))}
-            <button
-              onClick={() =>
-                addSectionItem("references", { name: "", contact: "" })
-              }
-              className="text-sm text-blue-600 hover:underline"
-            >
-              + Add Reference
-            </button>
-          </div>
-
-          {/* Download Button */}
+        {/* Experience (Dynamic) */}
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold text-[#21141a] mb-2">
+            Experience
+          </h3>
+          {experienceList.map((exp, index) => (
+            <div key={index} className="flex items-center mb-2 gap-2">
+              <textarea
+                value={exp}
+                onChange={(e) =>
+                  handleExperienceChange(index, e.target.value)
+                }
+                placeholder="Enter experience details"
+                rows="2"
+                className="w-full border p-2 rounded"
+              />
+              {experienceList.length > 1 && (
+                <button
+                  onClick={() => removeExperience(index)}
+                  className="bg-red-500 text-white px-2 py-1 rounded"
+                >
+                  ❌
+                </button>
+              )}
+            </div>
+          ))}
           <button
-            onClick={downloadResume}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
+            onClick={addExperience}
+            className="mt-2 text-sm text-white bg-[#21141a] px-3 py-1 rounded"
           >
-            Download PDF
+            ➕ Add More
           </button>
         </div>
 
-        {/* ---------- LIVE PREVIEW ---------- */}
-        <div
-          ref={previewRef}
-          className="bg-white p-8 shadow rounded-lg max-h-[90vh] overflow-y-auto"
-        >
-          <div className="flex gap-6">
-            {/* Left Side */}
-            <div className="w-1/3 border-r pr-4">
-              {formData.photo && (
-                <img
-                  src={URL.createObjectURL(formData.photo)}
-                  alt="profile"
-                  className="w-32 h-32 object-cover rounded-full mx-auto mb-4"
-                />
+        {/* Education (Dynamic) */}
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold text-[#21141a] mb-2">
+            Education
+          </h3>
+          {educationList.map((edu, index) => (
+            <div key={index} className="flex items-center mb-2 gap-2">
+              <textarea
+                value={edu}
+                onChange={(e) =>
+                  handleEducationChange(index, e.target.value)
+                }
+                placeholder="Enter education details"
+                rows="2"
+                className="w-full border p-2 rounded"
+              />
+              {educationList.length > 1 && (
+                <button
+                  onClick={() => removeEducation(index)}
+                  className="bg-red-500 text-white px-2 py-1 rounded"
+                >
+                  ❌
+                </button>
               )}
-              <h1 className="text-xl font-bold text-center">{formData.name}</h1>
-              <p className="text-center text-gray-600 mb-4">
-                {formData.profession}
-              </p>
+            </div>
+          ))}
+          <button
+            onClick={addEducation}
+            className="mt-2 text-sm text-white bg-[#21141a] px-3 py-1 rounded"
+          >
+            ➕ Add More
+          </button>
+        </div>
 
-              <h2 className="font-semibold text-gray-700 mb-2">
-                Contact Info
+        {/* Download Button */}
+        <button
+          onClick={handleDownloadPDF}
+          className="mt-6 bg-[#21141a] text-white px-6 py-2 rounded hover:bg-[#3a2330] transition"
+        >
+          Download PDF
+        </button>
+      </div>
+
+      {/* RIGHT PANEL (Preview) */}
+      <div
+        ref={previewRef}
+        className="bg-white p-0 shadow rounded-lg max-h-[90vh] overflow-y-auto w-full md:w-1/2"
+      >
+        <div className="flex min-h-full">
+          {/* LEFT SIDE */}
+          <div className="w-1/3 bg-[#21141a] text-white p-6 flex flex-col items-start">
+            {/* Profile Image */}
+            {formData.image && (
+              <img
+                src={formData.image}
+                alt="Profile"
+                className="w-32 h-32 object-cover rounded-full mx-auto mb-4 border-4 border-[#f4c542]"
+              />
+            )}
+
+            {/* About Me */}
+            {formData.aboutMe && (
+              <div className="mb-6">
+                <h2 className="font-semibold text-[#f4c542] mb-2 text-lg">
+                  About Me
+                </h2>
+                <p className="text-gray-200 text-sm leading-relaxed">
+                  {formData.aboutMe}
+                </p>
+              </div>
+            )}
+
+            {/* Skills */}
+            {formData.skills && (
+              <div className="mb-6">
+                <h2 className="font-semibold text-[#f4c542] mb-2 text-lg">
+                  Skills
+                </h2>
+                <ul className="list-disc list-inside text-gray-200 text-sm space-y-1">
+                  {formData.skills.split(",").map((skill, index) => (
+                    <li key={index}>{skill.trim()}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Languages */}
+            {formData.languages && (
+              <div>
+                <h2 className="font-semibold text-[#f4c542] mb-2 text-lg">
+                  Languages
+                </h2>
+                <ul className="list-disc list-inside text-gray-200 text-sm space-y-1">
+                  {formData.languages.split(",").map((lang, index) => (
+                    <li key={index}>{lang.trim()}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT SIDE */}
+          <div className="w-2/3 pl-8 bg-white text-black p-6">
+            {formData.fullName && (
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {formData.fullName}
+              </h1>
+            )}
+
+            {formData.jobTitle && (
+              <h2 className="text-lg text-gray-700 font-medium mb-6">
+                {formData.jobTitle}
               </h2>
-              <ul className="text-sm text-gray-600 mb-4">
-                {formData.contact.map((c, i) => (
-                  <li key={i}>
-                    <b>{c.type}:</b> {c.value}
-                  </li>
-                ))}
-              </ul>
+            )}
 
-              <h2 className="font-semibold text-gray-700 mb-2">Skills</h2>
-              <ul className="text-sm text-gray-600 mb-4">
-                {formData.skills.map((s, i) => (
-                  <li key={i}>
-                    {s.skill} - {s.level}
-                  </li>
-                ))}
-              </ul>
+            {(formData.email || formData.phone || formData.address) && (
+              <div className="mb-6">
+                <h2 className="font-semibold text-[#21141a] mb-2">
+                  Contact Info
+                </h2>
+                <ul className="text-gray-700 text-sm space-y-1">
+                  {formData.email && <li>Email: {formData.email}</li>}
+                  {formData.phone && <li>Phone: {formData.phone}</li>}
+                  {formData.address && <li>Address: {formData.address}</li>}
+                </ul>
+              </div>
+            )}
 
-              <h2 className="font-semibold text-gray-700 mb-2">Languages</h2>
-              <ul className="text-sm text-gray-600">
-                {formData.languages.map((l, i) => (
-                  <li key={i}>
-                    {l.language} ({l.level})
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {experienceList.length > 0 && (
+              <div className="mb-6">
+                <h2 className="font-semibold text-[#21141a] mb-2">Experience</h2>
+                <ul className="list-disc list-inside text-gray-700 text-sm space-y-1">
+                  {experienceList.map(
+                    (exp, index) => exp && <li key={index}>{exp}</li>
+                  )}
+                </ul>
+              </div>
+            )}
 
-            {/* Right Side */}
-            <div className="w-2/3 pl-4">
-              <h2 className="text-lg font-semibold mb-2">About Me</h2>
-              <p className="text-gray-700 mb-4 whitespace-pre-line">
-                {formData.about}
-              </p>
-
-              <h2 className="text-lg font-semibold mb-2">Introduction</h2>
-              <p className="text-gray-700 mb-4 whitespace-pre-line">
-                {formData.introduction}
-              </p>
-
-              <h2 className="text-lg font-semibold mb-2">Experience</h2>
-              {formData.experience.map((exp, i) => (
-                <div key={i} className="mb-4">
-                  <p className="font-semibold">
-                    {exp.title} — {exp.company}
-                  </p>
-                  <p className="text-sm text-gray-500 mb-1">{exp.years}</p>
-                  <p className="text-gray-700 whitespace-pre-line">
-                    {exp.details}
-                  </p>
-                </div>
-              ))}
-
-              <h2 className="text-lg font-semibold mb-2">Education</h2>
-              {formData.education.map((edu, i) => (
-                <p key={i} className="text-gray-700">
-                  {edu.degree}, {edu.institution} ({edu.year})
-                </p>
-              ))}
-
-              <h2 className="text-lg font-semibold mt-4 mb-2">References</h2>
-              {formData.references.map((ref, i) => (
-                <p key={i} className="text-gray-700">
-                  {ref.name} — {ref.contact}
-                </p>
-              ))}
-            </div>
+            {educationList.length > 0 && (
+              <div>
+                <h2 className="font-semibold text-[#21141a] mb-2">Education</h2>
+                <ul className="list-disc list-inside text-gray-700 text-sm space-y-1">
+                  {educationList.map(
+                    (edu, index) => edu && <li key={index}>{edu}</li>
+                  )}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       </div>
