@@ -8,7 +8,7 @@ const templates = [
     id: 1,
     img: "/temp1.webp",
     title: "Professional Template",
-    desc: "Clean and elegant layout designed for professionals to make a great first impression.",
+    desc: "Clean and elegant layout designed for professionals to make a great  impression.",
   },
   {
     id: 2,

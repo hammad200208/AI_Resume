@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { CheckCircle2 } from "lucide-react";
+import Footer from "../components/Footer";
 
 export default function PricingPage() {
   const plans = [
@@ -50,6 +51,7 @@ export default function PricingPage() {
   ];
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50 py-20 px-6">
       <div className="max-w-6xl mx-auto text-center">
         {/* Custom Heading */}
@@ -118,5 +120,7 @@ export default function PricingPage() {
         </div>
       </div>
     </div>
+    <Footer />
+    </>
   );
 }
