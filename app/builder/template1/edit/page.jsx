@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -10,9 +10,20 @@ export default function EditBuilderPage1() {
     education: [],
     contact: [],
     experience: [],
+    skills: [],
   });
   const [imagePreview, setImagePreview] = useState(null);
   const resumeRef = useRef();
+
+  // -------------------- Local Storage --------------------
+  useEffect(() => {
+    const saved = localStorage.getItem("resumeData");
+    if (saved) setFormData(JSON.parse(saved));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("resumeData", JSON.stringify(formData));
+  }, [formData]);
 
   // -------------------- Handlers --------------------
   const handleChange = (key, value) => {
@@ -47,7 +58,13 @@ export default function EditBuilderPage1() {
   const downloadResume = async () => {
     const resumeElement = resumeRef.current;
     if (!resumeElement) return alert("Nothing to export!");
-    const canvas = await html2canvas(resumeElement, { scale: 2, backgroundColor: "#ffffff" });
+
+    const canvas = await html2canvas(resumeElement, {
+      scale: 2, // Higher quality
+      useCORS: true,
+      backgroundColor: "#ffffff",
+    });
+
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF({
       orientation: "portrait",
@@ -58,6 +75,7 @@ export default function EditBuilderPage1() {
     pdf.save("resume.pdf");
   };
 
+  // -------------------- Render Helper --------------------
   const renderSection = (key, label, fields) => (
     <div key={key} className="mb-6">
       <h3 className="text-lg font-semibold mb-2">{label}</h3>
@@ -109,7 +127,7 @@ export default function EditBuilderPage1() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* ---------------- Form ---------------- */}
-        <div className="bg-white p-6 shadow rounded-lg overflow-y-auto max-h-[80vh]">
+        <div className="bg-white p-6 shadow-md rounded-lg overflow-y-auto max-h-[80vh] border border-gray-100">
           <h2 className="text-lg font-semibold mb-4">Fill Details</h2>
 
           <div>
@@ -172,6 +190,9 @@ export default function EditBuilderPage1() {
               { key: "description", label: "Description", type: "textarea" },
             ])}
 
+            {/* Skills */}
+            {renderSection("skills", "Skills", [{ key: "skill", label: "Skill", type: "text" }])}
+
             <button
               onClick={downloadResume}
               className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -182,13 +203,13 @@ export default function EditBuilderPage1() {
         </div>
 
         {/* ---------------- Preview ---------------- */}
-        <div className="bg-gray-50 p-6 shadow rounded-lg overflow-y-auto max-h-[80vh]">
+        <div className="bg-gray-50 p-6 shadow-md rounded-lg overflow-y-auto max-h-[80vh] border border-gray-100">
           <h2 className="text-lg font-semibold mb-4">Preview</h2>
 
           <div
             ref={resumeRef}
             id="resume-preview"
-            className="bg-white  rounded-lg overflow-hidden flex flex-col md:flex-row relative"
+            className="bg-white rounded-lg overflow-hidden flex flex-col md:flex-row shadow-lg border border-gray-100"
           >
             {/* Left Column */}
             <div className="md:w-1/3 bg-gray-100 p-5 text-center space-y-4">
@@ -204,18 +225,24 @@ export default function EditBuilderPage1() {
                 </div>
               )}
               <div>
-                <h2 className="text-xl font-bold text-gray-800">{formData.name}</h2>
-                <p className="text-sm text-blue-600">{formData.profession}</p>
+                <h2 className="text-xl font-bold text-gray-800">
+                  {formData.name || "Your Name"}
+                </h2>
+                <p className="text-sm text-blue-600">
+                  {formData.profession || "Your Profession"}
+                </p>
               </div>
 
               {formData.about && (
                 <div className="text-left">
                   <h3 className="font-semibold text-gray-700 mb-1">About Me</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">{formData.about}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {formData.about}
+                  </p>
                 </div>
               )}
 
-              {Array.isArray(formData.education) && formData.education.length > 0 && (
+              {formData.education?.length > 0 && (
                 <div className="text-left">
                   <h3 className="font-semibold text-gray-700 mb-1">Education</h3>
                   {formData.education.map((edu, i) => (
@@ -228,7 +255,7 @@ export default function EditBuilderPage1() {
                 </div>
               )}
 
-              {Array.isArray(formData.contact) && formData.contact.length > 0 && (
+              {formData.contact?.length > 0 && (
                 <div className="text-left">
                   <h3 className="font-semibold text-gray-700 mb-1">Contact</h3>
                   {formData.contact.map((c, i) => (
@@ -240,11 +267,22 @@ export default function EditBuilderPage1() {
                   ))}
                 </div>
               )}
+
+              {formData.skills?.length > 0 && (
+                <div className="text-left">
+                  <h3 className="font-semibold text-gray-700 mb-1">Skills</h3>
+                  <ul className="list-disc list-inside text-sm text-gray-600">
+                    {formData.skills.map((s, i) => (
+                      <li key={i}>{s.skill}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             {/* Right Column */}
-            <div className="md:w-2/3 p-6">
-              {Array.isArray(formData.experience) && formData.experience.length > 0 && (
+            <div className="md:w-2/3 p-6 bg-gray-100 ">
+              {formData.experience?.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 border-b pb-1 mb-2">
                     Work Experience
@@ -252,27 +290,18 @@ export default function EditBuilderPage1() {
                   {formData.experience.map((exp, i) => (
                     <div key={i} className="text-sm text-gray-600 mb-3">
                       <p className="font-medium">
-                        {exp.title} {exp.company && `- ${exp.company}`}
+                        {exp.title || "Job Title"}{" "}
+                        {exp.company && `- ${exp.company}`}
                       </p>
-                      <p className="text-xs text-gray-500">{exp.years}</p>
+                      <p className="text-xs text-gray-500">
+                        {exp.years || ""}
+                      </p>
                       <p>{exp.description}</p>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          </div>
-
-          {/* -------- Beautiful Footer Image -------- */}
-          <div className="relative w-full  rounded-b-lg overflow-hidden shadow-md">
-            <div className="absolute inset-0 "></div>
-            <Image
-              src="/ft.png"
-              alt="Footer Banner"
-              width={1200}
-              height={150}
-              className="w-full h-52 object-cover"
-            />
           </div>
         </div>
       </div>
