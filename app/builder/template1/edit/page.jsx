@@ -6,6 +6,8 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 export default function EditBuilderPage1() {
+  const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     education: [],
     contact: [],
@@ -13,7 +15,13 @@ export default function EditBuilderPage1() {
     skills: [],
   });
   const [imagePreview, setImagePreview] = useState(null);
+  const [aiPrompt, setAiPrompt] = useState("");
   const resumeRef = useRef();
+
+  // -------------------- Mount Check --------------------
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // -------------------- Local Storage --------------------
   useEffect(() => {
@@ -60,7 +68,7 @@ export default function EditBuilderPage1() {
     if (!resumeElement) return alert("Nothing to export!");
 
     const canvas = await html2canvas(resumeElement, {
-      scale: 2, // Higher quality
+      scale: 2,
       useCORS: true,
       backgroundColor: "#ffffff",
     });
@@ -74,6 +82,54 @@ export default function EditBuilderPage1() {
     pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
     pdf.save("resume.pdf");
   };
+
+  // -------------------- AI Resume Generation --------------------
+  const handleGenerateAI = async () => {
+  const prompt = `
+You are a resume writing assistant.
+Rewrite the following user-provided resume details into a short, well-structured "About Me" paragraph.
+- Keep the original tone and personality of the user's writing.
+- Use professional, natural language.
+- Limit the response to 60–80 words maximum.
+- Do not add introductions, titles, or quotes — only return the clean paragraph text.
+
+User's resume information:
+${JSON.stringify(formData, null, 2)}
+`;
+
+  try {
+    setLoading(true);
+
+    const response = await fetch("https://resumenbackend.vercel.app/api/ai/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    });
+
+    if (!response.ok) throw new Error("Failed to generate AI summary");
+
+    const data = await response.json();
+
+    // Clean up any extra formatting or quotes
+    const cleanText = data.text
+      ?.replace(/^["'\s]*(Here.*?:\s*)?/i, "")
+      ?.replace(/^["']|["']$/g, "")
+      ?.trim();
+
+    setFormData((prev) => ({
+      ...prev,
+      about: cleanText || prev.about,
+    }));
+
+    setAiPrompt("");
+  } catch (err) {
+    console.error(err);
+    alert("Error generating AI summary.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // -------------------- Render Helper --------------------
   const renderSection = (key, label, fields) => (
@@ -121,6 +177,8 @@ export default function EditBuilderPage1() {
   );
 
   // -------------------- UI --------------------
+  if (!mounted) return <div className="p-6 text-center text-gray-500">Loading builder...</div>;
+
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold text-gray-800">Professional Template Builder</h1>
@@ -168,21 +226,19 @@ export default function EditBuilderPage1() {
               />
             </div>
 
-            {/* Education */}
+            {/* Sections */}
             {renderSection("education", "Education", [
               { key: "degree", label: "Degree", type: "text" },
               { key: "institution", label: "Institution", type: "text" },
               { key: "year", label: "Year", type: "text" },
             ])}
 
-            {/* Contact */}
             {renderSection("contact", "Contact", [
               { key: "email", label: "Email", type: "text" },
               { key: "phone", label: "Phone", type: "text" },
               { key: "address", label: "Address", type: "text" },
             ])}
 
-            {/* Experience */}
             {renderSection("experience", "Work Experience", [
               { key: "title", label: "Job Title", type: "text" },
               { key: "company", label: "Company", type: "text" },
@@ -190,8 +246,26 @@ export default function EditBuilderPage1() {
               { key: "description", label: "Description", type: "textarea" },
             ])}
 
-            {/* Skills */}
             {renderSection("skills", "Skills", [{ key: "skill", label: "Skill", type: "text" }])}
+
+            {/* AI Resume Generator */}
+            <div className="mt-6 border-t pt-4">
+              <h3 className="font-semibold text-lg mb-2">Generate with AI</h3>
+              <textarea
+                rows={2}
+                placeholder="Write a prompt, e.g. 'Create a resume for a software engineer with 5 years experience in AI.'"
+                className="w-full border border-gray-300 rounded-md p-2 mb-2"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+              />
+              <button
+                onClick={handleGenerateAI}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                disabled={loading}
+              >
+                {loading ? "Generating..." : "Generate Resume"}
+              </button>
+            </div>
 
             <button
               onClick={downloadResume}
@@ -212,7 +286,9 @@ export default function EditBuilderPage1() {
             className="bg-white rounded-lg overflow-hidden flex flex-col md:flex-row shadow-lg border border-gray-100"
           >
             {/* Left Column */}
-            <div className="md:w-1/3 bg-gray-100 p-5 text-center space-y-4">
+            <div className="relative md:w-1/3 bg-gray-100 p-5 text-center space-y-4">
+              <div className="hidden md:block absolute right-0 top-0 h-full w-[2px] bg-gradient-to-b from-gray-300 via-gray-200 to-gray-300"></div>
+
               {imagePreview && (
                 <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-2 border-gray-300">
                   <Image
@@ -224,6 +300,7 @@ export default function EditBuilderPage1() {
                   />
                 </div>
               )}
+
               <div>
                 <h2 className="text-xl font-bold text-gray-800">
                   {formData.name || "Your Name"}
@@ -234,13 +311,16 @@ export default function EditBuilderPage1() {
               </div>
 
               {formData.about && (
-                <div className="text-left">
-                  <h3 className="font-semibold text-gray-700 mb-1">About Me</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    {formData.about}
-                  </p>
-                </div>
-              )}
+  <div className="text-left">
+    <h3 className="font-semibold text-gray-700 mb-1">About Me</h3>
+    <p className="text-sm text-gray-600 leading-relaxed">
+      {formData.about.split(" ").length > 80
+        ? formData.about.split(" ").slice(0, 80).join(" ") + "..."
+        : formData.about}
+    </p>
+  </div>
+)}
+
 
               {formData.education?.length > 0 && (
                 <div className="text-left">
@@ -281,7 +361,7 @@ export default function EditBuilderPage1() {
             </div>
 
             {/* Right Column */}
-            <div className="md:w-2/3 p-6 bg-gray-100 ">
+            <div className="md:w-2/3 p-6 bg-gray-50">
               {formData.experience?.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 border-b pb-1 mb-2">
@@ -290,12 +370,9 @@ export default function EditBuilderPage1() {
                   {formData.experience.map((exp, i) => (
                     <div key={i} className="text-sm text-gray-600 mb-3">
                       <p className="font-medium">
-                        {exp.title || "Job Title"}{" "}
-                        {exp.company && `- ${exp.company}`}
+                        {exp.title || "Job Title"} {exp.company && `- ${exp.company}`}
                       </p>
-                      <p className="text-xs text-gray-500">
-                        {exp.years || ""}
-                      </p>
+                      <p className="text-xs text-gray-500">{exp.years || ""}</p>
                       <p>{exp.description}</p>
                     </div>
                   ))}
