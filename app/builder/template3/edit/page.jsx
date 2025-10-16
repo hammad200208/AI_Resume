@@ -21,6 +21,9 @@ export default function MinimalTemplate() {
     interests: [],
   });
 
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const handleChange = (key, value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
@@ -40,9 +43,54 @@ export default function MinimalTemplate() {
     }));
   };
 
+  // 🧠 AI Resume Generator
+  const handleGenerateAI = async () => {
+    if (!aiPrompt && !formData.aboutMe && !formData.fullName) {
+      alert("Please fill some basic details or enter a prompt first!");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const prompt = `
+      You are a professional resume writing assistant.
+      Use the user's instruction and resume details below to generate a polished, concise, and engaging "About Me" paragraph (under 80 words).
+
+      User's instruction: "${aiPrompt || "Write a professional About Me summary."}"
+
+      User's resume information:
+      ${JSON.stringify(formData, null, 2)}
+      `;
+
+      const response = await fetch(
+        "https://resumenbackend.vercel.app/api/ai/generate",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+        }
+      );
+
+      const data = await response.json();
+      if (data.result) {
+        setFormData((prev) => ({
+          ...prev,
+          aboutMe: data.result.trim(),
+        }));
+      } else {
+        alert("Failed to generate AI summary. Try again.");
+      }
+    } catch (error) {
+      console.error("AI generation error:", error);
+      alert("Something went wrong with AI generation.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const downloadPDF = async () => {
     const resume = document.getElementById("resume-preview");
-    const canvas = await html2canvas(resume);
+    const canvas = await html2canvas(resume, { useCORS: true });
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
     const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -89,7 +137,28 @@ export default function MinimalTemplate() {
     <div className="flex flex-col md:flex-row gap-6 p-6">
       {/* Left: Form */}
       <div className="w-full md:w-1/2 space-y-4 overflow-y-auto h-[90vh] border p-4 rounded-lg shadow bg-white">
-        <h1 className="text-2xl font-semibold mb-3 text-center">Minimal Template Editor</h1>
+        <h1 className="text-2xl font-semibold mb-3 text-center">
+          Minimal Template Editor
+        </h1>
+
+        {/* AI Prompt Section */}
+        <div className="border p-3 rounded-md">
+          <h2 className="font-semibold mb-2">AI Resume Assistant</h2>
+          <textarea
+            rows={2}
+            placeholder='Example: "Create a strong About Me for a React Developer with 2 years of experience."'
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            className="w-full border p-2 rounded mb-2"
+          />
+          <button
+            onClick={handleGenerateAI}
+            disabled={loading}
+            className="bg-indigo-600 text-white px-3 py-1 rounded w-full"
+          >
+            {loading ? "Generating..." : "Generate About Me with AI"}
+          </button>
+        </div>
 
         {/* Image */}
         <label className="block">
@@ -109,6 +178,7 @@ export default function MinimalTemplate() {
           />
         </label>
 
+        {/* Basic Inputs */}
         {[
           { key: "fullName", label: "Full Name" },
           { key: "profession", label: "Profession / Title" },
@@ -134,6 +204,7 @@ export default function MinimalTemplate() {
           </label>
         ))}
 
+        {/* Dynamic Fields */}
         {Object.entries(repeaterFields).map(([key, fields]) => (
           <div key={key} className="border p-3 rounded-md">
             <h2 className="font-semibold mb-2 capitalize">{key}</h2>
@@ -193,7 +264,9 @@ export default function MinimalTemplate() {
             <h2 className="text-lg font-semibold mb-2 text-black">About Me</h2>
             <p className="text-sm mb-3 text-black">{formData.aboutMe}</p>
 
-            <h2 className="text-lg font-semibold mb-2 text-black">Career Objective</h2>
+            <h2 className="text-lg font-semibold mb-2 text-black">
+              Career Objective
+            </h2>
             <p className="text-sm mb-3 text-black">{formData.objective}</p>
 
             <h2 className="text-lg font-semibold mb-2 text-black">Education</h2>
@@ -203,14 +276,18 @@ export default function MinimalTemplate() {
               </p>
             ))}
 
-            <h2 className="text-lg font-semibold mt-3 mb-2 text-black">Languages</h2>
+            <h2 className="text-lg font-semibold mt-3 mb-2 text-black">
+              Languages
+            </h2>
             {formData.languages.map((lang, i) => (
               <p key={i} className="text-sm text-black">
                 {lang.language} ({lang.proficiency})
               </p>
             ))}
 
-            <h2 className="text-lg font-semibold mt-3 mb-2 text-black">References</h2>
+            <h2 className="text-lg font-semibold mt-3 mb-2 text-black">
+              References
+            </h2>
             {formData.references.map((ref, i) => (
               <p key={i} className="text-sm mb-1 text-black">
                 {ref.name} — {ref.designation} ({ref.contact})

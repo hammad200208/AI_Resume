@@ -20,9 +20,13 @@ const Template2EditPage = () => {
   const [experienceList, setExperienceList] = useState([""]);
   const [educationList, setEducationList] = useState([""]);
 
+  // ✅ New AI states
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const previewRef = useRef(null);
 
-  // Handle general input
+  // -------------------- Input Handlers --------------------
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
     if (type === "file") {
@@ -37,7 +41,7 @@ const Template2EditPage = () => {
     }
   };
 
-  // Experience handlers
+  // -------------------- Experience --------------------
   const handleExperienceChange = (index, value) => {
     const list = [...experienceList];
     list[index] = value;
@@ -51,7 +55,7 @@ const Template2EditPage = () => {
     setExperienceList(list);
   };
 
-  // Education handlers
+  // -------------------- Education --------------------
   const handleEducationChange = (index, value) => {
     const list = [...educationList];
     list[index] = value;
@@ -65,7 +69,7 @@ const Template2EditPage = () => {
     setEducationList(list);
   };
 
-  // Download as PDF
+  // -------------------- PDF Download --------------------
   const handleDownloadPDF = async () => {
     const element = previewRef.current;
     const canvas = await html2canvas(element, { scale: 2 });
@@ -77,6 +81,52 @@ const Template2EditPage = () => {
     pdf.save("resume.pdf");
   };
 
+  // -------------------- AI Resume Generator --------------------
+  const handleGenerateAI = async () => {
+    const prompt = `
+You are a resume writing assistant.
+Use the following user instruction and resume details to generate a short, well-structured "About Me" paragraph (60–80 words max).
+User's instruction: "${aiPrompt || "Write a professional summary."}"
+
+User's resume information:
+${JSON.stringify(
+  { ...formData, experienceList, educationList },
+  null,
+  2
+)}
+`;
+
+    try {
+      setLoading(true);
+      const response = await fetch("https://resumenbackend.vercel.app/api/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate AI summary");
+
+      const data = await response.json();
+      const cleanText = data.text
+        ?.replace(/^["'\s]*(Here.*?:\s*)?/i, "")
+        ?.replace(/^["']|["']$/g, "")
+        ?.trim();
+
+      setFormData((prev) => ({
+        ...prev,
+        aboutMe: cleanText || prev.aboutMe,
+      }));
+
+      setAiPrompt("");
+    } catch (err) {
+      console.error(err);
+      alert("Error generating AI summary.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // -------------------- Render --------------------
   return (
     <div className="flex flex-col md:flex-row gap-8 p-8 bg-gray-50 min-h-screen">
       {/* LEFT PANEL (Form) */}
@@ -85,9 +135,7 @@ const Template2EditPage = () => {
 
         {/* Upload Image */}
         <div className="mb-4">
-          <label className="block mb-2 font-medium text-gray-700">
-            Profile Image
-          </label>
+          <label className="block mb-2 font-medium text-gray-700">Profile Image</label>
           <input
             type="file"
             name="image"
@@ -100,9 +148,7 @@ const Template2EditPage = () => {
         {/* Basic Info */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
-              Full Name
-            </label>
+            <label className="block mb-1 text-sm font-medium text-gray-700">Full Name</label>
             <input
               type="text"
               name="fullName"
@@ -112,9 +158,7 @@ const Template2EditPage = () => {
             />
           </div>
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
-              Job Title
-            </label>
+            <label className="block mb-1 text-sm font-medium text-gray-700">Job Title</label>
             <input
               type="text"
               name="jobTitle"
@@ -127,9 +171,7 @@ const Template2EditPage = () => {
 
         {/* About Me */}
         <div className="mt-4">
-          <label className="block mb-1 text-sm font-medium text-gray-700">
-            About Me
-          </label>
+          <label className="block mb-1 text-sm font-medium text-gray-700">About Me</label>
           <textarea
             name="aboutMe"
             value={formData.aboutMe}
@@ -137,6 +179,25 @@ const Template2EditPage = () => {
             rows="3"
             className="w-full border p-2 rounded"
           />
+        </div>
+
+        {/* ✅ AI Resume Generator */}
+        <div className="mt-6 border-t pt-4">
+          <h3 className="font-semibold text-lg mb-2">Generate with AI</h3>
+          <textarea
+            rows={2}
+            placeholder="Write a prompt, e.g. 'Create a resume for a web developer with 3 years experience.'"
+            className="w-full border border-gray-300 rounded-md p-2 mb-2"
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+          />
+          <button
+            onClick={handleGenerateAI}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            disabled={loading}
+          >
+            {loading ? "Generating..." : "Generate About Me"}
+          </button>
         </div>
 
         {/* Skills & Languages */}
@@ -170,9 +231,7 @@ const Template2EditPage = () => {
         {/* Contact Info */}
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
-              Email
-            </label>
+            <label className="block mb-1 text-sm font-medium text-gray-700">Email</label>
             <input
               type="email"
               name="email"
@@ -182,9 +241,7 @@ const Template2EditPage = () => {
             />
           </div>
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
-              Phone
-            </label>
+            <label className="block mb-1 text-sm font-medium text-gray-700">Phone</label>
             <input
               type="text"
               name="phone"
@@ -194,9 +251,7 @@ const Template2EditPage = () => {
             />
           </div>
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700">
-              Address
-            </label>
+            <label className="block mb-1 text-sm font-medium text-gray-700">Address</label>
             <input
               type="text"
               name="address"
@@ -207,18 +262,14 @@ const Template2EditPage = () => {
           </div>
         </div>
 
-        {/* Experience (Dynamic) */}
+        {/* Experience */}
         <div className="mt-6">
-          <h3 className="text-lg font-semibold text-[#21141a] mb-2">
-            Experience
-          </h3>
+          <h3 className="text-lg font-semibold text-[#21141a] mb-2">Experience</h3>
           {experienceList.map((exp, index) => (
             <div key={index} className="flex items-center mb-2 gap-2">
               <textarea
                 value={exp}
-                onChange={(e) =>
-                  handleExperienceChange(index, e.target.value)
-                }
+                onChange={(e) => handleExperienceChange(index, e.target.value)}
                 placeholder="Enter experience details"
                 rows="2"
                 className="w-full border p-2 rounded"
@@ -241,18 +292,14 @@ const Template2EditPage = () => {
           </button>
         </div>
 
-        {/* Education (Dynamic) */}
+        {/* Education */}
         <div className="mt-6">
-          <h3 className="text-lg font-semibold text-[#21141a] mb-2">
-            Education
-          </h3>
+          <h3 className="text-lg font-semibold text-[#21141a] mb-2">Education</h3>
           {educationList.map((edu, index) => (
             <div key={index} className="flex items-center mb-2 gap-2">
               <textarea
                 value={edu}
-                onChange={(e) =>
-                  handleEducationChange(index, e.target.value)
-                }
+                onChange={(e) => handleEducationChange(index, e.target.value)}
                 placeholder="Enter education details"
                 rows="2"
                 className="w-full border p-2 rounded"
@@ -292,7 +339,6 @@ const Template2EditPage = () => {
         <div className="flex min-h-full">
           {/* LEFT SIDE */}
           <div className="w-1/3 bg-[#21141a] text-white p-6 flex flex-col items-start">
-            {/* Profile Image */}
             {formData.image && (
               <img
                 src={formData.image}
@@ -304,9 +350,7 @@ const Template2EditPage = () => {
             {/* About Me */}
             {formData.aboutMe && (
               <div className="mb-6">
-                <h2 className="font-semibold text-[#f4c542] mb-2 text-lg">
-                  About Me
-                </h2>
+                <h2 className="font-semibold text-[#f4c542] mb-2 text-lg">About Me</h2>
                 <p className="text-gray-200 text-sm leading-relaxed">
                   {formData.aboutMe}
                 </p>
@@ -316,9 +360,7 @@ const Template2EditPage = () => {
             {/* Skills */}
             {formData.skills && (
               <div className="mb-6">
-                <h2 className="font-semibold text-[#f4c542] mb-2 text-lg">
-                  Skills
-                </h2>
+                <h2 className="font-semibold text-[#f4c542] mb-2 text-lg">Skills</h2>
                 <ul className="list-disc list-inside text-gray-200 text-sm space-y-1">
                   {formData.skills.split(",").map((skill, index) => (
                     <li key={index}>{skill.trim()}</li>
@@ -330,9 +372,7 @@ const Template2EditPage = () => {
             {/* Languages */}
             {formData.languages && (
               <div>
-                <h2 className="font-semibold text-[#f4c542] mb-2 text-lg">
-                  Languages
-                </h2>
+                <h2 className="font-semibold text-[#f4c542] mb-2 text-lg">Languages</h2>
                 <ul className="list-disc list-inside text-gray-200 text-sm space-y-1">
                   {formData.languages.split(",").map((lang, index) => (
                     <li key={index}>{lang.trim()}</li>
@@ -345,22 +385,14 @@ const Template2EditPage = () => {
           {/* RIGHT SIDE */}
           <div className="w-2/3 pl-8 bg-white text-black p-6">
             {formData.fullName && (
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {formData.fullName}
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{formData.fullName}</h1>
             )}
-
             {formData.jobTitle && (
-              <h2 className="text-lg text-gray-700 font-medium mb-6">
-                {formData.jobTitle}
-              </h2>
+              <h2 className="text-lg text-gray-700 font-medium mb-6">{formData.jobTitle}</h2>
             )}
-
             {(formData.email || formData.phone || formData.address) && (
               <div className="mb-6">
-                <h2 className="font-semibold text-[#21141a] mb-2">
-                  Contact Info
-                </h2>
+                <h2 className="font-semibold text-[#21141a] mb-2">Contact Info</h2>
                 <ul className="text-gray-700 text-sm space-y-1">
                   {formData.email && <li>Email: {formData.email}</li>}
                   {formData.phone && <li>Phone: {formData.phone}</li>}
@@ -368,25 +400,19 @@ const Template2EditPage = () => {
                 </ul>
               </div>
             )}
-
             {experienceList.length > 0 && (
               <div className="mb-6">
                 <h2 className="font-semibold text-[#21141a] mb-2">Experience</h2>
                 <ul className="list-disc list-inside text-gray-700 text-sm space-y-1">
-                  {experienceList.map(
-                    (exp, index) => exp && <li key={index}>{exp}</li>
-                  )}
+                  {experienceList.map((exp, index) => exp && <li key={index}>{exp}</li>)}
                 </ul>
               </div>
             )}
-
             {educationList.length > 0 && (
               <div>
                 <h2 className="font-semibold text-[#21141a] mb-2">Education</h2>
                 <ul className="list-disc list-inside text-gray-700 text-sm space-y-1">
-                  {educationList.map(
-                    (edu, index) => edu && <li key={index}>{edu}</li>
-                  )}
+                  {educationList.map((edu, index) => edu && <li key={index}>{edu}</li>)}
                 </ul>
               </div>
             )}
