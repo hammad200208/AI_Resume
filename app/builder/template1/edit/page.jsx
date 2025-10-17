@@ -96,7 +96,8 @@ Rewrite the following user-provided resume details into a short, well-structured
 User's resume information:
 ${JSON.stringify(formData, null, 2)}
 `;
-
+const token = localStorage.getItem("token");
+console.log("🪙 Token being sent:", token);
   try {
     console.log("🟢 Starting AI Resume Generation...");
     console.log("📤 Prompt being sent to backend:", prompt);
