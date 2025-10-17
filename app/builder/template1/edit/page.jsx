@@ -98,6 +98,8 @@ ${JSON.stringify(formData, null, 2)}
 `;
 
   try {
+    console.log("🟢 Starting AI Resume Generation...");
+    console.log("📤 Prompt being sent to backend:", prompt);
     setLoading(true);
 
     const response = await fetch("https://resumenbackend.vercel.app/api/ai/generate", {
@@ -105,28 +107,34 @@ ${JSON.stringify(formData, null, 2)}
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt }),
     });
-
+    console.log("📥 Raw Response:", response)
     if (!response.ok) throw new Error("Failed to generate AI summary");
 
     const data = await response.json();
+    console.log("✅ Response JSON:", data);
 
     // Clean up any extra formatting or quotes
     const cleanText = data.text
       ?.replace(/^["'\s]*(Here.*?:\s*)?/i, "")
       ?.replace(/^["']|["']$/g, "")
       ?.trim();
-
+    console.log("🧹 Cleaned AI Text:", cleanText);
+    if (!cleanText) {
+      console.warn("⚠️ No AI text returned. Using fallback.");
+    }
     setFormData((prev) => ({
       ...prev,
       about: cleanText || prev.about,
     }));
 
     setAiPrompt("");
+    console.log("✅ Form data updated successfully with AI text.");
   } catch (err) {
     console.error(err);
     alert("Error generating AI summary.");
   } finally {
     setLoading(false);
+    console.log("🕓 AI generation process complete.");
   }
 };
 
