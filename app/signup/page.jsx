@@ -33,14 +33,15 @@ export default function SignupPage() {
 
     try {
       const res = await fetch("https://resumenbackend.vercel.app/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName: formData.fullName,
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    fullName: formData.fullName,
+    email: formData.email,
+    password: formData.password,
+    confirmPassword: formData.confirmPassword, // ✅ add this line
+  }),
+});
 
       const data = await res.json();
 
