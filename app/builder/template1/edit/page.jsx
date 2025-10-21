@@ -102,12 +102,16 @@ console.log("🪙 Token being sent:", token);
     console.log("🟢 Starting AI Resume Generation...");
     console.log("📤 Prompt being sent to backend:", prompt);
     setLoading(true);
-
+    const token = localStorage.getItem("token");
     const response = await fetch("https://resumenbackend.vercel.app/api/ai/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
-    });
+    method: "POST",
+    headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${token}`, // ✅ include JWT
+  },
+  body: JSON.stringify({ prompt }),
+});
+
     console.log("📥 Raw Response:", response)
     if (!response.ok) throw new Error("Failed to generate AI summary");
 
