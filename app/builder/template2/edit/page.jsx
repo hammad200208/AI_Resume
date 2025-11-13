@@ -67,6 +67,8 @@ const Template2EditPage = () => {
   // -------------------- PDF Download --------------------
   const handleDownloadPDF = async () => {
     const element = previewRef.current;
+    if (!element) return;
+
     const canvas = await html2canvas(element, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
@@ -87,8 +89,8 @@ Full Name: ${formData.fullName || "N/A"}
 Job Title: ${formData.jobTitle || "N/A"}
 Skills: ${formData.skills || "N/A"}
 Languages: ${formData.languages || "N/A"}
-Experience: ${experienceList.join(", ") || "N/A"}
-Education: ${educationList.join(", ") || "N/A"}
+Experience: ${experienceList.filter(Boolean).join(", ") || "N/A"}
+Education: ${educationList.filter(Boolean).join(", ") || "N/A"}
 Email: ${formData.email || "N/A"}
 Phone: ${formData.phone || "N/A"}
 Address: ${formData.address || "N/A"}
@@ -98,15 +100,22 @@ Write it in first-person but without starting with "I am" every time. Keep it fo
 
     try {
       setLoading(true);
+
+      const token = localStorage.getItem("token"); // include JWT if backend requires it
+
       const response = await fetch("https://resumenbackend.vercel.app/api/ai/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify({ prompt }),
       });
 
       if (!response.ok) throw new Error("Failed to generate AI summary");
 
       const data = await response.json();
+
       const cleanText = data.text
         ?.replace(/^["'\s]*(Here.*?:\s*)?/i, "")
         ?.replace(/^["']|["']$/g, "")
@@ -341,9 +350,7 @@ Write it in first-person but without starting with "I am" every time. Keep it fo
             {formData.aboutMe && (
               <div className="mb-6">
                 <h2 className="font-semibold text-[#f4c542] mb-2 text-lg">About Me</h2>
-                <p className="text-gray-200 text-sm leading-relaxed">
-                  {formData.aboutMe}
-                </p>
+                <p className="text-gray-200 text-sm leading-relaxed">{formData.aboutMe}</p>
               </div>
             )}
 
