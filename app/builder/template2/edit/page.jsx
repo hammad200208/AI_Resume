@@ -19,9 +19,6 @@ const Template2EditPage = () => {
 
   const [experienceList, setExperienceList] = useState([""]);
   const [educationList, setEducationList] = useState([""]);
-
-  // ✅ New AI states
-  const [aiPrompt, setAiPrompt] = useState("");
   const [loading, setLoading] = useState(false);
 
   const previewRef = useRef(null);
@@ -47,7 +44,6 @@ const Template2EditPage = () => {
     list[index] = value;
     setExperienceList(list);
   };
-
   const addExperience = () => setExperienceList([...experienceList, ""]);
   const removeExperience = (index) => {
     const list = [...experienceList];
@@ -61,7 +57,6 @@ const Template2EditPage = () => {
     list[index] = value;
     setEducationList(list);
   };
-
   const addEducation = () => setEducationList([...educationList, ""]);
   const removeEducation = (index) => {
     const list = [...educationList];
@@ -85,15 +80,20 @@ const Template2EditPage = () => {
   const handleGenerateAI = async () => {
     const prompt = `
 You are a resume writing assistant.
-Use the following user instruction and resume details to generate a short, well-structured "About Me" paragraph (60–80 words max).
-User's instruction: "${aiPrompt || "Write a professional summary."}"
+Using the following user-provided details, generate a concise, professional "About Me" paragraph (max 80 words).
+It should sound confident, clear, and relevant to a resume.
 
-User's resume information:
-${JSON.stringify(
-  { ...formData, experienceList, educationList },
-  null,
-  2
-)}
+Full Name: ${formData.fullName || "N/A"}
+Job Title: ${formData.jobTitle || "N/A"}
+Skills: ${formData.skills || "N/A"}
+Languages: ${formData.languages || "N/A"}
+Experience: ${experienceList.join(", ") || "N/A"}
+Education: ${educationList.join(", ") || "N/A"}
+Email: ${formData.email || "N/A"}
+Phone: ${formData.phone || "N/A"}
+Address: ${formData.address || "N/A"}
+
+Write it in first-person but without starting with "I am" every time. Keep it formal and brief.
 `;
 
     try {
@@ -116,8 +116,6 @@ ${JSON.stringify(
         ...prev,
         aboutMe: cleanText || prev.aboutMe,
       }));
-
-      setAiPrompt("");
     } catch (err) {
       console.error(err);
       alert("Error generating AI summary.");
@@ -181,22 +179,14 @@ ${JSON.stringify(
           />
         </div>
 
-        {/* ✅ AI Resume Generator */}
-        <div className="mt-6 border-t pt-4">
-          <h3 className="font-semibold text-lg mb-2">Generate with AI</h3>
-          <textarea
-            rows={2}
-            placeholder="Write a prompt, e.g. 'Create a resume for a web developer with 3 years experience.'"
-            className="w-full border border-gray-300 rounded-md p-2 mb-2"
-            value={aiPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
-          />
+        {/* ✅ AI Button */}
+        <div className="mt-4">
           <button
             onClick={handleGenerateAI}
             className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
             disabled={loading}
           >
-            {loading ? "Generating..." : "Generate About Me"}
+            {loading ? "Generating..." : "Generate About Me with AI"}
           </button>
         </div>
 
