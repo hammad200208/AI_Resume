@@ -43,7 +43,7 @@ export default function MinimalTemplate() {
     }));
   };
 
-  // 🧠 AI Resume Generator
+  // -------------------- AI Resume Generator --------------------
   const handleGenerateAI = async () => {
     if (!aiPrompt && !formData.aboutMe && !formData.fullName) {
       alert("Please fill some basic details or enter a prompt first!");
@@ -53,14 +53,16 @@ export default function MinimalTemplate() {
     setLoading(true);
     try {
       const prompt = `
-      You are a professional resume writing assistant.
-      Use the user's instruction and resume details below to generate a polished, concise, and engaging "About Me" paragraph (under 80 words).
+You are a professional resume writing assistant.
+Use the user's instruction and resume details below to generate a polished, concise, and engaging "About Me" paragraph (under 80 words).
 
-      User's instruction: "${aiPrompt || "Write a professional About Me summary."}"
+User's instruction: "${aiPrompt || "Write a professional About Me summary."}"
 
-      User's resume information:
-      ${JSON.stringify(formData, null, 2)}
-      `;
+User's resume information:
+${JSON.stringify(formData, null, 2)}
+
+Write in first-person, formal, and concise. Do not start every sentence with "I am".
+`;
 
       const response = await fetch(
         "https://resumenbackend.vercel.app/api/ai/generate",
@@ -72,10 +74,15 @@ export default function MinimalTemplate() {
       );
 
       const data = await response.json();
-      if (data.result) {
+      if (data.text || data.result) {
+        const cleanText = (data.text || data.result)
+          .replace(/^["'\s]*(Here.*?:\s*)?/i, "")
+          .replace(/^["']|["']$/g, "")
+          .trim();
+
         setFormData((prev) => ({
           ...prev,
-          aboutMe: data.result.trim(),
+          aboutMe: cleanText || prev.aboutMe,
         }));
       } else {
         alert("Failed to generate AI summary. Try again.");
@@ -90,6 +97,8 @@ export default function MinimalTemplate() {
 
   const downloadPDF = async () => {
     const resume = document.getElementById("resume-preview");
+    if (!resume) return;
+
     const canvas = await html2canvas(resume, { useCORS: true });
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
@@ -135,7 +144,7 @@ export default function MinimalTemplate() {
 
   return (
     <div className="flex flex-col md:flex-row gap-6 p-6">
-      {/* Left: Form */}
+      {/* Left Panel: Form */}
       <div className="w-full md:w-1/2 space-y-4 overflow-y-auto h-[90vh] border p-4 rounded-lg shadow bg-white">
         <h1 className="text-2xl font-semibold mb-3 text-center">
           Minimal Template Editor
@@ -241,13 +250,13 @@ export default function MinimalTemplate() {
         </button>
       </div>
 
-      {/* Right: Preview */}
+      {/* Right Panel: Preview */}
       <div
         id="resume-preview"
         className="w-full md:w-1/2 border rounded-lg shadow-lg bg-white overflow-hidden"
       >
         <div className="flex min-h-full">
-          {/* Left column */}
+          {/* Left Column */}
           <div className="w-1/3 min-h-full bg-[#e5c2b2] text-black p-5 flex flex-col justify-start">
             {formData.image && (
               <div className="w-28 h-28 mx-auto mb-4 rounded-full overflow-hidden border-2 border-black">
@@ -261,83 +270,117 @@ export default function MinimalTemplate() {
               </div>
             )}
 
-            <h2 className="text-lg font-semibold mb-2 text-black">About Me</h2>
-            <p className="text-sm mb-3 text-black">{formData.aboutMe}</p>
+            {formData.aboutMe && (
+              <>
+                <h2 className="text-lg font-semibold mb-2 text-black">About Me</h2>
+                <p className="text-sm mb-3 text-black">{formData.aboutMe}</p>
+              </>
+            )}
 
-            <h2 className="text-lg font-semibold mb-2 text-black">
-              Career Objective
-            </h2>
-            <p className="text-sm mb-3 text-black">{formData.objective}</p>
+            {formData.objective && (
+              <>
+                <h2 className="text-lg font-semibold mb-2 text-black">Career Objective</h2>
+                <p className="text-sm mb-3 text-black">{formData.objective}</p>
+              </>
+            )}
 
-            <h2 className="text-lg font-semibold mb-2 text-black">Education</h2>
-            {formData.education.map((edu, i) => (
-              <p key={i} className="text-sm mb-1 text-black">
-                <strong>{edu.degree}</strong> — {edu.institution} ({edu.year})
-              </p>
-            ))}
+            {formData.education.length > 0 && (
+              <>
+                <h2 className="text-lg font-semibold mb-2 text-black">Education</h2>
+                {formData.education.map((edu, i) => (
+                  <p key={i} className="text-sm mb-1 text-black">
+                    <strong>{edu.degree}</strong> — {edu.institution} ({edu.year})
+                  </p>
+                ))}
+              </>
+            )}
 
-            <h2 className="text-lg font-semibold mt-3 mb-2 text-black">
-              Languages
-            </h2>
-            {formData.languages.map((lang, i) => (
-              <p key={i} className="text-sm text-black">
-                {lang.language} ({lang.proficiency})
-              </p>
-            ))}
+            {formData.languages.length > 0 && (
+              <>
+                <h2 className="text-lg font-semibold mt-3 mb-2 text-black">Languages</h2>
+                {formData.languages.map((lang, i) => (
+                  <p key={i} className="text-sm text-black">
+                    {lang.language} ({lang.proficiency})
+                  </p>
+                ))}
+              </>
+            )}
 
-            <h2 className="text-lg font-semibold mt-3 mb-2 text-black">
-              References
-            </h2>
-            {formData.references.map((ref, i) => (
-              <p key={i} className="text-sm mb-1 text-black">
-                {ref.name} — {ref.designation} ({ref.contact})
-              </p>
-            ))}
+            {formData.references.length > 0 && (
+              <>
+                <h2 className="text-lg font-semibold mt-3 mb-2 text-black">References</h2>
+                {formData.references.map((ref, i) => (
+                  <p key={i} className="text-sm mb-1 text-black">
+                    {ref.name} — {ref.designation} ({ref.contact})
+                  </p>
+                ))}
+              </>
+            )}
           </div>
 
-          {/* Right column */}
+          {/* Right Column */}
           <div className="w-2/3 pl-6 bg-white text-black">
-            <h1 className="text-2xl font-bold">{formData.fullName}</h1>
-            <h3 className="text-lg mb-4">{formData.profession}</h3>
+            {formData.fullName && <h1 className="text-2xl font-bold">{formData.fullName}</h1>}
+            {formData.profession && <h3 className="text-lg mb-4">{formData.profession}</h3>}
 
-            <h2 className="font-semibold text-lg mb-2">Experience</h2>
-            {formData.experience.map((exp, i) => (
-              <div key={i} className="mb-2">
-                <p className="text-sm font-semibold">
-                  {exp.title} — {exp.company} ({exp.duration})
-                </p>
-                <p className="text-sm">{exp.description}</p>
-              </div>
-            ))}
+            {formData.experience.length > 0 && (
+              <>
+                <h2 className="font-semibold text-lg mb-2">Experience</h2>
+                {formData.experience.map((exp, i) => (
+                  <div key={i} className="mb-2">
+                    <p className="text-sm font-semibold">
+                      {exp.title} — {exp.company} ({exp.duration})
+                    </p>
+                    <p className="text-sm">{exp.description}</p>
+                  </div>
+                ))}
+              </>
+            )}
 
-            <h2 className="font-semibold text-lg mt-3 mb-2">Skills</h2>
-            <ul className="list-disc pl-5 text-sm">
-              {formData.skills.map((s, i) => (
-                <li key={i}>{s.skill}</li>
-              ))}
-            </ul>
+            {formData.skills.length > 0 && (
+              <>
+                <h2 className="font-semibold text-lg mt-3 mb-2">Skills</h2>
+                <ul className="list-disc pl-5 text-sm">
+                  {formData.skills.map((s, i) => (
+                    <li key={i}>{s.skill}</li>
+                  ))}
+                </ul>
+              </>
+            )}
 
-            <h2 className="font-semibold text-lg mt-3 mb-2">Projects</h2>
-            {formData.projects.map((p, i) => (
-              <div key={i}>
-                <p className="font-semibold text-sm">{p.title}</p>
-                <p className="text-sm">{p.description}</p>
-              </div>
-            ))}
+            {formData.projects.length > 0 && (
+              <>
+                <h2 className="font-semibold text-lg mt-3 mb-2">Projects</h2>
+                {formData.projects.map((p, i) => (
+                  <div key={i}>
+                    <p className="font-semibold text-sm">{p.title}</p>
+                    <p className="text-sm">{p.description}</p>
+                  </div>
+                ))}
+              </>
+            )}
 
-            <h2 className="font-semibold text-lg mt-3 mb-2">Certifications</h2>
-            {formData.certifications.map((c, i) => (
-              <p key={i} className="text-sm">
-                {c.name} — {c.issuer} ({c.year})
-              </p>
-            ))}
+            {formData.certifications.length > 0 && (
+              <>
+                <h2 className="font-semibold text-lg mt-3 mb-2">Certifications</h2>
+                {formData.certifications.map((c, i) => (
+                  <p key={i} className="text-sm">
+                    {c.name} — {c.issuer} ({c.year})
+                  </p>
+                ))}
+              </>
+            )}
 
-            <h2 className="font-semibold text-lg mt-3 mb-2">Interests</h2>
-            <ul className="list-disc pl-5 text-sm">
-              {formData.interests.map((i, idx) => (
-                <li key={idx}>{i.interest}</li>
-              ))}
-            </ul>
+            {formData.interests.length > 0 && (
+              <>
+                <h2 className="font-semibold text-lg mt-3 mb-2">Interests</h2>
+                <ul className="list-disc pl-5 text-sm">
+                  {formData.interests.map((i, idx) => (
+                    <li key={idx}>{i.interest}</li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
         </div>
       </div>
